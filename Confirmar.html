@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Confirmar Tarefa</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+  <style>
+    body {
+      background-color: #0d0d0d;
+      color: #fff;
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+      padding: 40px;
+    }
+
+    h1 {
+      color: #00ffb7;
+      text-shadow: 0 0 10px #00ffb7;
+    }
+
+    p {
+      margin-bottom: 30px;
+    }
+
+    #confirmarBtn {
+      background-color: #00ffb7;
+      border: none;
+      padding: 15px 30px;
+      font-size: 18px;
+      border-radius: 30px;
+      cursor: pointer;
+      color: #000;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+
+    #confirmarBtn.confirmado {
+      background-color: #555;
+      color: #ccc;
+      cursor: default;
+    }
+  </style>
+</head>
+<body>
+  <h1>Confirmar Tarefa</h1>
+  <p>Clique no botão abaixo para confirmar que realizou a tarefa.</p>
+  <button id="confirmarBtn">Confirmar Tarefa</button>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "SUA_API_KEY",
+      authDomain: "SEU_DOMINIO.firebaseapp.com",
+      projectId: "SEU_PROJECT_ID",
+      storageBucket: "SEU_BUCKET.appspot.com",
+      messagingSenderId: "SENDER_ID",
+      appId: "APP_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const btn = document.getElementById("confirmarBtn");
+
+    btn.addEventListener("click", async () => {
+      const userId = localStorage.getItem("userId"); // ou outro método de login
+
+      if (!userId) {
+        alert("Usuário não logado.");
+        return;
+      }
+
+      try {
+        const userDocRef = db.collection("usuarios").doc(userId);
+        const userDoc = await userDocRef.get();
+
+        if (!userDoc.exists) {
+          alert("Usuário não encontrado.");
+          return;
+        }
+
+        const data = userDoc.data();
+        const novoSaldo = (data.saldo || 0) + 0.007;
+
+        await userDocRef.update({
+          saldo: novoSaldo,
+          historico: firebase.firestore.FieldValue.arrayUnion({
+            data: new Date().toISOString(),
+            valor: 0.007,
+            descricao: "Tarefa confirmada"
+          })
+        });
+
+        btn.textContent = "Tarefa Confirmada";
+        btn.classList.add("confirmado");
+        btn.disabled = true;
+      } catch (err) {
+        alert("Erro ao confirmar tarefa.");
+        console.error(err);
+      }
+    });
+  </script>
+</body>
+</html>
