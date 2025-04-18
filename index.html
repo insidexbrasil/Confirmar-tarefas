@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Confirmar Tarefa - Insidex</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirmar Tarefa</title>
   <style>
     body {
-      background-color: #0d0d0d;
+      background-color: #111;
       color: #fff;
-      font-family: 'Arial', sans-serif;
+      font-family: Arial, sans-serif;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -21,7 +21,7 @@
       padding: 30px;
       border-radius: 16px;
       text-align: center;
-      box-shadow: 0 0 25px rgba(0, 255, 183, 0.3);
+      box-shadow: 0 0 25px rgba(0, 255, 183, 0.2);
     }
 
     .botao-confirmar {
@@ -34,6 +34,7 @@
       cursor: pointer;
       font-size: 16px;
       margin-top: 20px;
+      transition: background 0.3s;
     }
 
     .botao-confirmar:disabled {
@@ -43,7 +44,6 @@
 
     h1 {
       font-size: 24px;
-      margin-bottom: 10px;
       color: #00ffb7;
     }
 
@@ -63,8 +63,9 @@
     const btn = document.getElementById("btnConfirmar");
 
     btn.addEventListener("click", () => {
-      const valorTarefa = 0.007;
+      const valorTarefa = 0.04;
 
+      // Saldo
       let saldo = parseFloat(localStorage.getItem("saldoInsidex")) || 0;
       saldo += valorTarefa;
       localStorage.setItem("saldoInsidex", saldo.toFixed(3));
@@ -76,17 +77,17 @@
       localStorage.setItem("historicoInsidex", JSON.stringify(historico));
 
       // Gráfico
-      const grafico = JSON.parse(localStorage.getItem("graficoTarefas")) || [0];
-      const ultimo = grafico[grafico.length - 1] || 0;
-      grafico.push(ultimo + 1);
+      const grafico = JSON.parse(localStorage.getItem("graficoTarefas")) || [];
+      grafico.push(1);
       localStorage.setItem("graficoTarefas", JSON.stringify(grafico));
 
+      // Feedback e bloqueio
       btn.textContent = "Tarefa Confirmada!";
       btn.disabled = true;
 
       setTimeout(() => {
-        window.location.href = "index.html";
-      }, 1500);
+        window.location.href = "https://insidexbrasil.github.io/Insidex/";
+      }, 3000);
     });
   </script>
 </body>
