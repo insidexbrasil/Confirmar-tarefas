@@ -16,7 +16,6 @@
       margin: 0;
       padding: 10px;
     }
-
     .card {
       background-color: #1a1a1a;
       padding: 20px;
@@ -26,7 +25,6 @@
       width: 100%;
       max-width: 350px;
     }
-
     .botao-confirmar {
       background-color: #00ffb7;
       color: #000;
@@ -40,20 +38,12 @@
       transition: background 0.3s;
       width: 100%;
     }
-
     .botao-confirmar:disabled {
       background-color: #555;
       cursor: not-allowed;
     }
-
-    h1 {
-      font-size: 20px;
-      color: #00ffb7;
-    }
-
-    p {
-      font-size: 14px;
-    }
+    h1 { font-size: 20px; color: #00ffb7; }
+    p { font-size: 14px; }
   </style>
 </head>
 <body>
@@ -64,8 +54,10 @@
   </div>
 
   <script type="module">
-    // Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+
     const firebaseConfig = {
       apiKey: "AIzaSyBxtvz8KqN5knzovcYRHdXxMtcUDhDYI1g",
       authDomain: "insidexbr.firebaseapp.com",
@@ -74,45 +66,70 @@
       messagingSenderId: "166788819502",
       appId: "1:166788819502:web:b9d4135d4693a2f5eb8dbf"
     };
-    initializeApp(firebaseConfig);
 
-    // Função de confirmação
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getFirestore(app);
     const btn = document.getElementById("btnConfirmar");
 
-    btn.addEventListener("click", () => {
-      const valorTarefa = 0.04;
-
-      // Verifica se já confirmou
-      if (localStorage.getItem("tarefaConfirmada") === "true") {
-        btn.textContent = "Tarefa já confirmada!";
-        btn.disabled = true;
-        return;
-      }
-
-      // Atualiza saldo
-      let saldo = parseFloat(localStorage.getItem("saldoInsidex")) || 0;
-      saldo += valorTarefa;
-      localStorage.setItem("saldoInsidex", saldo.toFixed(3));
-
-      // Atualiza histórico
-      const historico = JSON.parse(localStorage.getItem("historicoInsidex")) || [];
-      const data = new Date().toLocaleString();
-      historico.unshift(`Tarefa confirmada em ${data}`);
-      localStorage.setItem("historicoInsidex", JSON.stringify(historico));
-
-      // Atualiza gráfico
-      const grafico = JSON.parse(localStorage.getItem("graficoTarefas")) || [];
-      grafico.push(1);
-      localStorage.setItem("graficoTarefas", JSON.stringify(grafico));
-
-      // Bloqueia e volta
-      btn.textContent = "Tarefa Confirmada!";
+    // Impedir múltiplas confirmações na mesma sessão
+    if (sessionStorage.getItem("tarefaConfirmada") === "true") {
+      btn.textContent = "Tarefa já confirmada!";
       btn.disabled = true;
-      localStorage.setItem("tarefaConfirmada", "true");
+    }
 
-      setTimeout(() => {
-        window.location.href = "https://insidexbrasil.github.io/Insidex/";
-      }, 3000);
+    signInAnonymously(auth)
+      .then(() => console.log("Autenticado anonimamente"))
+      .catch(err => console.error("Erro:", err));
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const uid = user.uid;
+        const ref = doc(db, "usuarios", uid);
+
+        btn.addEventListener("click", async () => {
+          btn.disabled = true;
+          btn.textContent = "Confirmando...";
+
+          try {
+            const snap = await getDoc(ref);
+            let dados;
+
+            if (snap.exists()) {
+              dados = snap.data();
+            } else {
+              // Se for novo, cria estrutura padrão
+              dados = { saldo: 0, grafico: [0], historico: [] };
+              await setDoc(ref, dados);
+            }
+
+            // Atualizações
+            const novoSaldo = (dados.saldo || 0) + 0.04;
+            const novoGrafico = [...(dados.grafico || []), 1];
+            const novaData = new Date().toLocaleString();
+            const novoHistorico = [`Tarefa confirmada em ${novaData}`, ...(dados.historico || [])];
+
+            await updateDoc(ref, {
+              saldo: novoSaldo,
+              grafico: novoGrafico,
+              historico: novoHistorico
+            });
+
+            // Feedback ao usuário
+            btn.textContent = "Tarefa Confirmada!";
+            sessionStorage.setItem("tarefaConfirmada", "true");
+
+            setTimeout(() => {
+              window.location.href = "https://insidexbrasil.github.io/Insidex/";
+            }, 3000);
+
+          } catch (error) {
+            console.error("Erro ao confirmar tarefa:", error);
+            btn.textContent = "Erro. Tente novamente.";
+            btn.disabled = false;
+          }
+        });
+      }
     });
   </script>
 </body>
