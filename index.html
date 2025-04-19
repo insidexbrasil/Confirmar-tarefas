@@ -59,36 +59,65 @@
     <button id="btnConfirmar" class="botao-confirmar">Confirmar Tarefa</button>
   </div>
 
-  <script>
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, increment } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBxtvz8KqN5knzovcYRHdXxMtcUDhDYI1g",
+      authDomain: "insidexbr.firebaseapp.com",
+      projectId: "insidexbr",
+      storageBucket: "insidexbr.firebasestorage.app",
+      messagingSenderId: "166788819502",
+      appId: "1:166788819502:web:b9d4135d4693a2f5eb8dbf"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
     const btn = document.getElementById("btnConfirmar");
+    const valorTarefa = 0.04;
 
-    btn.addEventListener("click", () => {
-      const valorTarefa = 0.04;
+    signInAnonymously(auth)
+      .then(() => {
+        onAuthStateChanged(auth, async (user) => {
+          if (user) {
+            const uid = user.uid;
+            const userRef = doc(db, "usuarios", uid);
+            const userSnap = await getDoc(userRef);
 
-      // Saldo
-      let saldo = parseFloat(localStorage.getItem("saldoInsidex")) || 0;
-      saldo += valorTarefa;
-      localStorage.setItem("saldoInsidex", saldo.toFixed(3));
+            if (!userSnap.exists()) {
+              await setDoc(userRef, {
+                saldo: 0,
+                historico: [],
+                grafico: []
+              });
+            }
 
-      // Histórico
-      const historico = JSON.parse(localStorage.getItem("historicoInsidex")) || [];
-      const data = new Date().toLocaleString();
-      historico.unshift(`Tarefa confirmada em ${data}`);
-      localStorage.setItem("historicoInsidex", JSON.stringify(historico));
+            btn.addEventListener("click", async () => {
+              // Atualiza dados no Firestore
+              await updateDoc(userRef, {
+                saldo: increment(valorTarefa),
+                historico: arrayUnion(`Tarefa confirmada em ${new Date().toLocaleString()}`),
+                grafico: arrayUnion(1)
+              });
 
-      // Gráfico
-      const grafico = JSON.parse(localStorage.getItem("graficoTarefas")) || [];
-      grafico.push(1);
-      localStorage.setItem("graficoTarefas", JSON.stringify(grafico));
+              btn.textContent = "Tarefa Confirmada!";
+              btn.disabled = true;
 
-      // Feedback e bloqueio
-      btn.textContent = "Tarefa Confirmada!";
-      btn.disabled = true;
-
-      setTimeout(() => {
-        window.location.href = "https://insidexbrasil.github.io/Insidex/";
-      }, 3000);
-    });
+              setTimeout(() => {
+                window.location.href = "https://insidexbrasil.github.io/Insidex/";
+              }, 3000);
+            });
+          }
+        });
+      })
+      .catch((error) => {
+        console.error("Erro ao logar anonimamente:", error);
+      });
   </script>
 </body>
 </html>
